@@ -1,0 +1,95 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Short Summary: PCA Compression for BERT Embeddings}
+\author{Yujun Ge}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Goal}
+
+This project studies whether high-dimensional BERT text embeddings can be compressed while preserving downstream classification performance. The current experiments use PCA to reduce 768-dimensional BERT \texttt{[CLS]} embeddings and evaluate the compressed representations on AG News classification.
+
+The broader question I am interested in is not only whether PCA can compress BERT embeddings in-distribution, but whether a compression basis learned from one set of examples can still preserve useful structure under held-out categories, distribution shifts, or different NLP tasks.
+
+\section{Current Experimental Setup}
+
+\begin{itemize}
+    \item Dataset: AG News, using 2,000 training examples and 500 held-out test examples.
+    \item Embeddings: \texttt{google-bert/bert-base-uncased}, final-layer \texttt{[CLS]} representation.
+    \item Classifier: logistic regression.
+    \item Compression: PCA to dimensions $2,4,8,16,32,64,128,256,384,512,768$.
+\end{itemize}
+
+\section{Preliminary Results}
+
+In the initial setup, the uncompressed 768-dimensional baseline achieved 0.830 test accuracy. PCA-compressed embeddings preserved much of this performance. The strongest result was at 128 dimensions, where accuracy was 0.834 while reducing dimensionality by 83.3\%.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rrrr}
+\toprule
+Dimensions & Accuracy & Variance Explained & Size Reduction \\
+\midrule
+32  & 0.814 & 0.590 & 95.8\% \\
+64  & 0.814 & 0.712 & 91.7\% \\
+128 & 0.834 & 0.826 & 83.3\% \\
+384 & 0.802 & 0.965 & 50.0\% \\
+512 & 0.822 & 0.986 & 33.3\% \\
+768 & 0.830 & 1.000 & 0.0\% \\
+\bottomrule
+\end{tabular}
+\caption{Selected PCA compression results on AG News.}
+\end{table}
+
+I then ran a stricter experiment where the examples used to fit PCA were separated from the examples used to train the classifier. In this setting, the 768-dimensional baseline achieved 0.822 accuracy. Several compressed settings remained close to baseline: 384 dimensions achieved 0.818 and 512 dimensions achieved 0.826.
+
+Finally, I added a held-out category stress test where PCA was fit without seeing the Sci/Tech category, then evaluated on the full test set. This was meant as a first check of whether the compression basis generalizes to a semantic category not used to fit the compression transform. Performance did not collapse, especially at moderate to high dimensionalities, suggesting that the PCA basis may capture some transferable structure.
+
+\section{Novelty Question}
+
+From an initial literature search, dimensionality reduction for pretrained embeddings has already been studied. For example, Zhang et al. evaluate unsupervised dimensionality reduction methods for pretrained sentence embeddings and report that PCA can preserve performance across several tasks \cite{zhang2024}. Jha and Mihata study BERT embedding compression for text classification using nonlinear geometric methods combined with PCA \cite{jha2021}. May et al. study downstream performance of compressed word embeddings and connect performance to eigenspace overlap \cite{may2019}.
+
+Because of this, the basic result that PCA can compress BERT embeddings is probably not novel enough on its own. A more promising direction may be to study \textbf{when a compression basis transfers}: for example, whether a PCA basis learned from one dataset, class subset, or task preserves performance under held-out categories, distribution shifts, or different NLP tasks.
+
+\section{Possible Next Steps}
+
+\begin{enumerate}
+    \item Fit PCA on AG News embeddings and evaluate the same projection on another task such as SST-2.
+    \item Compare in-task PCA against transferred PCA from a different dataset or task.
+    \item Compare PCA with random projection, autoencoder compression, and quantization.
+    \item Repeat experiments across multiple random seeds.
+    \item Measure whether PCA subspace similarity or variance explained predicts downstream transfer performance.
+\end{enumerate}
+
+\section{Main Question}
+
+The main question I would appreciate feedback on is whether this transferability/robustness framing seems like a promising way to make the project more novel, or whether there is a better direction for turning the current preliminary results into a publishable study.
+
+\begin{thebibliography}{9}
+
+\bibitem{zhang2024}
+Gaifan Zhang, Yi Zhou, and Danushka Bollegala.
+\newblock Evaluating Unsupervised Dimensionality Reduction Methods for Pretrained Sentence Embeddings.
+\newblock arXiv:2403.14001, 2024.
+
+\bibitem{jha2021}
+Rishi Jha and Kai Mihata.
+\newblock On Geodesic Distances and Contextual Embedding Compression for Text Classification.
+\newblock arXiv:2104.11295, 2021.
+
+\bibitem{may2019}
+Avner May, Jian Zhang, Tri Dao, and Christopher R\'e.
+\newblock On the Downstream Performance of Compressed Word Embeddings.
+\newblock arXiv:1909.01264, 2019.
+
+\end{thebibliography}
+
+\end{document}
