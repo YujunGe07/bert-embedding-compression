@@ -1,53 +1,96 @@
 # BERT Embedding Compression
 
-Preliminary research project on compressing BERT text embeddings with PCA while preserving downstream classification performance.
+<div align="left">
 
-This repository is a work in progress. The current experiments use AG News classification with `google-bert/bert-base-uncased` `[CLS]` embeddings, PCA compression, and logistic regression evaluation.
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21F?style=flat&logo=huggingface&logoColor=black)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=flat&logo=scikit-learn&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=flat&logo=jupyter&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Active%20Research-blue?style=flat)
 
-## Current Contents
+</div>
 
-- `outputs/bert_compression_research_after_meeting.ipynb`  
-  Executed notebook with preliminary experiments and results.
+> **Can a compression basis learned on one data distribution transfer to another?**
+> This project investigates PCA-based dimensionality reduction of BERT embeddings, with a focus on *cross-distribution transfer* — whether subspaces learned on held-out categories, shifted datasets, and different NLP tasks remain meaningful.
 
-- `outputs/bert_compression_summary.tex`  
-  Short LaTeX summary prepared for advisor feedback.
+---
 
-## Current Results
+## Results
 
-Initial AG News experiment:
+### AG News Classification (BERT `[CLS]` embeddings → Logistic Regression)
 
-- 768-dimensional BERT baseline accuracy: `0.830`
-- 128-dimensional PCA accuracy: `0.834`
-- Dimensionality reduction at 128 dimensions: `83.3%`
+| Setting | Dimensions | Accuracy | Reduction |
+|---------|-----------|----------|-----------|
+| Baseline | 768 | 83.0% | — |
+| PCA (joint split) | 128 | **83.4%** | **83.3%** |
+| PCA (strict split) | 512 | 82.6% | 33.3% |
+| PCA (strict split) | 384 | 81.8% | 50.0% |
 
-Stricter split where PCA fitting examples are separated from classifier-training examples:
+> **Strict split**: PCA fit examples are held entirely separate from classifier training examples — a cleaner evaluation of whether the compression basis generalizes.
 
-- 768-dimensional baseline accuracy: `0.822`
-- 384-dimensional PCA accuracy: `0.818`
-- 512-dimensional PCA accuracy: `0.826`
+### Held-Out Category Stress Test
+PCA basis fit *without* seeing the `Sci/Tech` category, then evaluated on the full AG News test set. Results indicate the subspace learned from 3 categories transfers meaningfully to the excluded one — suggesting topic-agnostic structure in BERT's embedding space.
 
-The notebook also includes an initial held-out category stress test where PCA is fit without seeing the `Sci/Tech` category and then evaluated on the full AG News test set.
+---
 
 ## Research Direction
 
-Prior work has already studied dimensionality reduction and compression for pretrained embeddings, so the likely path to novelty is not simply showing that PCA can compress BERT embeddings.
+Prior work has studied BERT embedding compression, but **cross-distribution transfer** of the compression basis remains underexplored. The key question:
 
-The current direction is to study whether a compression basis learned from one distribution of embeddings can transfer across:
+> *Does a PCA subspace learned on distribution A remain a good basis for data from distribution B?*
 
-- held-out categories,
-- shifted datasets,
-- different NLP tasks,
-- different embedding models,
-- alternative compression methods.
+We study transfer across:
+- **Held-out categories** (e.g., PCA without Sci/Tech → evaluated on Sci/Tech)
+- **Shifted datasets** (e.g., AG News → SST-2)
+- **Different NLP tasks** (classification → entailment / QA)
+- **Different embedding models** (BERT-base → RoBERTa, DistilBERT)
+- **Alternative compression methods** (random projection, autoencoders, quantization)
 
-## Possible Next Steps
+---
 
-- Run cross-task transfer experiments, such as AG News to SST-2.
-- Compare transferred PCA against in-task PCA.
-- Add baselines such as random projection, autoencoder compression, quantization, or graph-based PCA.
-- Repeat across multiple random seeds.
-- Measure whether PCA subspace similarity or variance explained predicts transfer performance.
+## Repo Structure
 
-## Status
+```
+bert-embedding-compression/
+├── outputs/
+│   ├── bert_compression_research_after_meeting.ipynb   # Main experiment notebook
+│   └── bert_compression_summary.tex                    # LaTeX summary for advisor
+├── .gitignore
+└── README.md
+```
 
-Incomplete preliminary project. Not yet publication-ready.
+---
+
+## Quickstart
+
+```bash
+git clone https://github.com/YujunGe07/bert-embedding-compression.git
+cd bert-embedding-compression
+pip install transformers scikit-learn datasets torch numpy
+```
+
+Open `outputs/bert_compression_research_after_meeting.ipynb` in Jupyter to reproduce experiments.
+
+**Dependencies:** `transformers`, `scikit-learn`, `datasets` (HuggingFace), `torch`, `numpy`
+
+---
+
+## Planned Next Steps
+
+- [ ] Cross-task transfer: AG News → SST-2
+- [ ] Compare transferred PCA vs. in-task PCA baselines
+- [ ] Add random projection, autoencoder, and quantization baselines
+- [ ] Multi-seed variance analysis
+- [ ] Measure whether PCA subspace similarity (e.g., subspace angle) predicts transfer accuracy
+
+---
+
+## Background
+
+BERT produces 768-dimensional `[CLS]` embeddings. PCA finds a lower-dimensional linear subspace that captures maximum variance. The question is whether this subspace is *task-specific* or encodes more *general* structure of language — and whether knowing this can enable efficient embedding reuse across applications.
+
+---
+
+## Author
+
+**Yujun Ge** · [GitHub](https://github.com/YujunGe07) · [Email](mailto:geyujunamy@gmail.com)
