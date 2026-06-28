@@ -11,50 +11,64 @@
 </div>
 
 > **Can a compression basis learned on one data distribution transfer to another?**
-> This project investigates PCA-based dimensionality reduction of BERT embeddings, with a focus on *cross-distribution transfer* — whether subspaces learned on held-out categories, shifted datasets, and different NLP tasks remain meaningful.
+> This project investigates PCA-based dimensionality reduction of BERT embeddings, with a focus on *cross-distribution transfer*: whether subspaces learned on held-out categories, shifted datasets, and different NLP tasks remain meaningful.
 
 ---
 
 ## Results
 
-### AG News Classification (BERT `[CLS]` embeddings → Logistic Regression)
+### AG News Classification
+
+BERT `[CLS]` embeddings are compressed and evaluated using logistic regression.
 
 | Setting | Dimensions | Accuracy | Reduction |
-|---------|-----------|----------|-----------|
+|---------|-----------:|---------:|----------:|
 | Baseline | 768 | 83.0% | — |
-| PCA (joint split) | 128 | **83.4%** | **83.3%** |
-| PCA (strict split) | 512 | 82.6% | 33.3% |
-| PCA (strict split) | 384 | 81.8% | 50.0% |
+| PCA, joint split | 128 | **83.4%** | **83.3%** |
+| PCA, strict split | 512 | 82.6% | 33.3% |
+| PCA, strict split | 384 | 81.8% | 50.0% |
 
-> **Strict split**: PCA fit examples are held entirely separate from classifier training examples — a cleaner evaluation of whether the compression basis generalizes.
+> **Strict split:** PCA fitting examples are held separate from classifier training examples. This is a cleaner evaluation of whether the compression basis generalizes.
 
 ### Held-Out Category Stress Test
-PCA basis fit *without* seeing the `Sci/Tech` category, then evaluated on the full AG News test set. Results indicate the subspace learned from 3 categories transfers meaningfully to the excluded one — suggesting topic-agnostic structure in BERT's embedding space.
+
+PCA is fit without seeing the `Sci/Tech` category, then evaluated on the full AG News test set. Preliminary results suggest the learned subspace can still transfer meaningfully to the excluded category, which may indicate topic-agnostic structure in BERT's embedding space.
 
 ---
 
 ## Research Direction
 
-Prior work has studied BERT embedding compression, but **cross-distribution transfer** of the compression basis remains underexplored. The key question:
+Prior work has studied embedding compression and dimensionality reduction. The current direction is narrower:
 
-> *Does a PCA subspace learned on distribution A remain a good basis for data from distribution B?*
+> *Does a compression basis learned on distribution A remain useful for distribution B?*
 
-We study transfer across:
-- **Held-out categories** (e.g., PCA without Sci/Tech → evaluated on Sci/Tech)
-- **Shifted datasets** (e.g., AG News → SST-2)
-- **Different NLP tasks** (classification → entailment / QA)
-- **Different embedding models** (BERT-base → RoBERTa, DistilBERT)
-- **Alternative compression methods** (random projection, autoencoders, quantization)
+The project studies transfer across:
+
+- held-out categories, such as PCA without `Sci/Tech` evaluated on `Sci/Tech`;
+- shifted datasets, such as AG News to SST-2;
+- different NLP tasks;
+- different embedding models;
+- alternative interpretable compression methods.
+
+After advisor feedback, the next emphasis is on interpretable PCA-related methods rather than learned black-box compression. The newest experiment compares:
+
+- standard PCA, using covariance eigenvectors;
+- sparse precision eigenbasis, using graphical Lasso to estimate a sparse inverse covariance matrix;
+- random projection, as a fast non-adaptive baseline.
+
+The sparse precision matrix can be interpreted as a graph over embedding dimensions, where nonzero entries represent conditional dependencies between variables.
 
 ---
 
 ## Repo Structure
 
-```
+```text
 bert-embedding-compression/
 ├── outputs/
-│   ├── bert_compression_research_after_meeting.ipynb   # Main experiment notebook
-│   └── bert_compression_summary.tex                    # LaTeX summary for advisor
+│   ├── bert_compression_research_after_meeting.ipynb   # Main executed experiment notebook
+│   ├── bert_compression_research_graph_based.ipynb     # Next graph-based compression notebook
+│   ├── bert_compression_summary.tex                    # Short LaTeX summary for advisor
+│   └── graph_based_next_steps.md                       # Advisor-guided next-step plan
 ├── .gitignore
 └── README.md
 ```
@@ -66,28 +80,39 @@ bert-embedding-compression/
 ```bash
 git clone https://github.com/YujunGe07/bert-embedding-compression.git
 cd bert-embedding-compression
-pip install transformers scikit-learn datasets torch numpy
+pip install transformers scikit-learn datasets torch numpy pandas matplotlib
 ```
 
-Open `outputs/bert_compression_research_after_meeting.ipynb` in Jupyter to reproduce experiments.
+Open `outputs/bert_compression_research_after_meeting.ipynb` in Jupyter or Colab to reproduce the current executed experiments.
 
-**Dependencies:** `transformers`, `scikit-learn`, `datasets` (HuggingFace), `torch`, `numpy`
+Open `outputs/bert_compression_research_graph_based.ipynb` to run the next sparse precision / graph-based compression comparison.
 
 ---
 
 ## Planned Next Steps
 
-- [ ] Cross-task transfer: AG News → SST-2
-- [ ] Compare transferred PCA vs. in-task PCA baselines
-- [ ] Add random projection, autoencoder, and quantization baselines
-- [ ] Multi-seed variance analysis
-- [ ] Measure whether PCA subspace similarity (e.g., subspace angle) predicts transfer accuracy
+- [ ] Run the sparse precision basis experiment.
+- [ ] Evaluate the sparse precision basis under the held-out `Sci/Tech` stress test.
+- [ ] Cross-task transfer: AG News to SST-2.
+- [ ] Compare transferred PCA against in-task PCA.
+- [ ] Compare PCA, sparse precision eigenbasis, and random projection.
+- [ ] Explore graph-learning methods from STAC-USC if the simple graphical Lasso baseline looks promising.
+- [ ] Repeat across multiple random seeds.
+- [ ] Measure whether PCA subspace similarity or variance explained predicts transfer accuracy.
 
 ---
 
 ## Background
 
-BERT produces 768-dimensional `[CLS]` embeddings. PCA finds a lower-dimensional linear subspace that captures maximum variance. The question is whether this subspace is *task-specific* or encodes more *general* structure of language — and whether knowing this can enable efficient embedding reuse across applications.
+BERT produces 768-dimensional `[CLS]` embeddings. PCA finds a lower-dimensional linear subspace that captures maximum variance. The core research question is whether this subspace is task-specific or captures more general structure of language, and whether this can enable efficient embedding reuse across applications.
+
+Graph-based variants may provide more interpretable compression bases by estimating sparse dependencies between embedding dimensions.
+
+---
+
+## Status
+
+Incomplete preliminary research project. Not publication-ready yet.
 
 ---
 
